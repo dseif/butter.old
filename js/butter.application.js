@@ -1966,6 +1966,7 @@
                             iframe.contentDocument.document :
                               iframe.contentDocument;
 
+            console.log(compiled);
             iframeDoc.document.open();
             iframeDoc.document.write(compiled);
             iframeDoc.document.close();
@@ -2718,7 +2719,14 @@
         locationHref = "//" + locationAry.slice(2, locationAry.length -1 ).join("/") + "/";
 
       }
+      
+      var popcornVideoString;
 
+      if ( $ioVideoUrl.val().search(/youtube/i) >= 0 ) {
+        popcornVideoString = "var $p = Popcorn( Popcorn.youtube( 'video-div', '" + $ioVideoUrl.val() + "', { width: 430, height: 300 } ) )";
+      } else {
+        popcornVideoString = "var $p = Popcorn('#video')";
+      }
 
       var $this = $(this),
           type = $this.data( "type" ),
@@ -2739,7 +2747,7 @@
           }, 
           compile = "", 
 
-          playbackAry = [ '$(function () { ', '  var $p = Popcorn("#video")', '  //uncomment to auto play', '  //$p.play();', '});\n' ],
+          playbackAry = [ '$(function () { ', popcornVideoString, '  //uncomment to auto play', '  //$p.play();', '});\n' ],
           compiled = "",
           stripAttrs = [ "style", "width", "height" ];
 
@@ -2830,6 +2838,7 @@
         $clone.children("#ui-video-controls,hr").remove();
 
         //  Restore controls
+        //console.log($clone.children() );
         if ( $clone.find("video").length ) {
 
           var $videoDiv = $("<div/>", { className: "butter-video-player" } ),
@@ -2846,7 +2855,22 @@
             .append( $videoClone )
             .append('\n        <p id="videoDescription">' + $ioVideoDesc.val() + '</p>\n      ');
 
-          $clone.children("video").replaceWith( $videoDiv );
+          $clone.children("video-div").replaceWith( $videoDiv );
+
+          compile += '\n    <div class="butter-video">\n      ' + $.trim( $clone.html() ) + '\n    </div>\n  ';
+        } else if ( $clone.children("#video-div").length ) {
+
+          //console.log($clone);
+          var $videoDiv = $("<div/>", { className: "butter-video-player" } ),
+              $videoClone = $clone.children("#video-div").clone();
+         //console.log($videoClone);
+
+          $videoDiv
+            .append( '\n        <h1 id="videoTitle">' + $ioVideoTitle.val() + '</h1>\n        ')
+            .append( $("<div/>", { id: "video-div" }) )
+            .append('\n        <p id="videoDescription">' + $ioVideoDesc.val() + '</p>\n      ');
+
+          $clone.children("#video-div").replaceWith( $videoDiv );
 
           compile += '\n    <div class="butter-video">\n      ' + $.trim( $clone.html() ) + '\n    </div>\n  ';
         }
@@ -2896,9 +2920,11 @@
                 var trackEvent = events[ eventName ],
                     popcornEvent = $popcorn.getTrackEvent( trackEvent.pluginOptions.id ),
                     target = popcornEvent['target-object'];
+                console.log(target);
+                console.log(divs[ target ]);
   
                 if ( target && !divs[ target ] ) {
-  
+
                   pluginHTML += '\n        <div id="' + target + '"></div>\n';
                   divs[ target ] = target;
   
@@ -2926,7 +2952,6 @@
       //  Wrap html export
       //  TODO: inject theme ID HERE
       exports.html = ' <div class="butter-player">' + compile + '  </div>';
-
 
       if( type === "full" ) {
         //  Compile all `exports`
@@ -3076,7 +3101,7 @@
         title: _( options.type ).capitalize(),
 
         beforeClose: function() {
-
+      
           $("#ui-preview-viewer").empty();
           $("#ui-preview-rendered").remove();
 
