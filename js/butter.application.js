@@ -580,7 +580,9 @@
         manifestElems = {},
         outsidePopcornTrack,
 
-        tracklinerTracks = {};
+        tracklinerTracks = {},
+        
+        urlRegex = /(?:http:\/\/www\.|http:\/\/|www\.|\.|^)(youtu|vimeo|soundcloud|baseplayer)/;
 
     global.$trackLiner = $trackLiner;
 
@@ -1426,8 +1428,7 @@
             if ( $v.length ) {
               $v.remove();
             }
-
-            if( $ioVideoUrl.val().search(/youtube/i) <= 0 && $ioVideoUrl.val().search(/vimeo/i) <= 0 && $ioVideoUrl.val().search(/soundcloud/i) <= 0 && $ioVideoUrl.val() != "baseplayer" ){
+            if( !urlRegex.exec( $ioVideoUrl.val() ) ){
 
               $video = $( "<video/>", {
 
@@ -1481,12 +1482,12 @@
 
             }, 13);
           }
-          else if( url.search(/youtube/i) >= 0 || url.search(/vimeo/i) >= 0 || url.search(/soundcloud/i) >= 0 ) {
-            if( url.search(/youtube/i) >= 0 ){
+          else if( urlRegex.exec( url ) ) {
+            if( urlRegex.exec( url )[1] == "youtu" ){
               $popcorn = Popcorn( Popcorn.youtube( 'video-div', url, { width: 430, height: 300 } ) );
               $popcorn.play();
             }
-            else if( url.search(/vimeo/i) >= 0 ){
+            else if( urlRegex.exec( url )[1] == "vimeo" ){
               $popcorn = Popcorn( Popcorn.vimeo( "video-div", url, {
                 css: {
                   width: "430px",
@@ -1495,7 +1496,7 @@
               }));
               $popcorn.play();
             }
-            else if( url.search(/soundcloud/i) >= 0 ){
+            else if( urlRegex.exec( url )[1] == "soundcloud" ){
               $popcorn = Popcorn( Popcorn.soundcloud( "video-div", url) );
               $popcorn.play();
             }
@@ -2048,7 +2049,7 @@
 
           $doc.trigger( "videoLoadComplete" ); 
 
-          if ( /file/.test( location.protocol ) && ( videoUri.search(/youtube/i) >= 0 || videoUri.search(/vimeo/i) >= 0 || videoUri.search(/soundcloud/i) >= 0 ) ) {
+          if ( /file/.test( location.protocol ) && urlRegex.exec( $ioVideoUrl.val() )  ) {
 
             $doc.trigger( "applicationError", {
               type: "Video needs to be run from a web server",
@@ -2056,7 +2057,7 @@
             });
 
           }
-          else {              
+          else {         
             $doc.trigger( "applicationError", {
               type: "URL Error",
               message: "Please check your url"
@@ -2345,7 +2346,7 @@
               value = $this.children( "input" ).val();
           var webServer = document.createElement( "div" );
           
-          if ( /file/.test( location.protocol ) && ( value.search(/youtube/i) >= 0 || value.search(/vimeo/i) >= 0 || value.search(/soundcloud/i) >= 0 ) ) {
+          if ( /file/.test( location.protocol ) && urlRegex.exec( value ) ) {
 
             $doc.trigger( "applicationError", {
               type: "Video needs to be run from a web server",
@@ -2722,8 +2723,12 @@
       
       var popcornVideoString;
 
-      if ( $ioVideoUrl.val().search(/youtube/i) >= 0 ) {
+      if ( urlRegex.exec( $ioVideoUrl.val() )[1] == "youtu" ) {
         popcornVideoString = "var $p = Popcorn( Popcorn.youtube( 'video-div', '" + $ioVideoUrl.val() + "', { width: 430, height: 300 } ) )";
+      } else if ( urlRegex.exec( $ioVideoUrl.val() )[1] == "vimeo" ){
+        popcornVideoString = "var $p = Popcorn( Popcorn.vimeo( 'video-div', '" + $ioVideoUrl.val() + "', { css: { width: '430px', height: '300px' } } ) )";
+      } else if ( urlRegex.exec( $ioVideoUrl.val() )[1] == "soundcloud" ) {
+        popcornVideoString = "var $p =  Popcorn( Popcorn.soundcloud( 'video-div', '" + $ioVideoUrl.val() + "') )";
       } else {
         popcornVideoString = "var $p = Popcorn('#video')";
       }
@@ -2838,7 +2843,6 @@
         $clone.children("#ui-video-controls,hr").remove();
 
         //  Restore controls
-        //console.log($clone.children() );
         if ( $clone.find("video").length ) {
 
           var $videoDiv = $("<div/>", { className: "butter-video-player" } ),
@@ -2855,15 +2859,13 @@
             .append( $videoClone )
             .append('\n        <p id="videoDescription">' + $ioVideoDesc.val() + '</p>\n      ');
 
-          $clone.children("video-div").replaceWith( $videoDiv );
+          $clone.find("video-div").replaceWith( $videoDiv );
 
           compile += '\n    <div class="butter-video">\n      ' + $.trim( $clone.html() ) + '\n    </div>\n  ';
         } else if ( $clone.children("#video-div").length ) {
 
-          //console.log($clone);
           var $videoDiv = $("<div/>", { className: "butter-video-player" } ),
               $videoClone = $clone.children("#video-div").clone();
-         //console.log($videoClone);
 
           $videoDiv
             .append( '\n        <h1 id="videoTitle">' + $ioVideoTitle.val() + '</h1>\n        ')
@@ -2873,6 +2875,7 @@
           $clone.children("#video-div").replaceWith( $videoDiv );
 
           compile += '\n    <div class="butter-video">\n      ' + $.trim( $clone.html() ) + '\n    </div>\n  ';
+          console.log(compile);
         }
 
         /*
@@ -2920,8 +2923,6 @@
                 var trackEvent = events[ eventName ],
                     popcornEvent = $popcorn.getTrackEvent( trackEvent.pluginOptions.id ),
                     target = popcornEvent['target-object'];
-                console.log(target);
-                console.log(divs[ target ]);
   
                 if ( target && !divs[ target ] ) {
 
